@@ -198,8 +198,6 @@ html, body {
 .ac-amount{font-size:clamp(52px,14vw,68px);font-weight:800;letter-spacing:-3px;line-height:1;color:var(--text);}
 .ac-sub{font-size:12px;font-family:'DM Mono',monospace;color:var(--sub);margin-top:6px;}
 
-.nfc-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;margin-bottom:32px;flex:1;justify-content:center;}
-
 .nfc-stage{
   width:220px;height:220px;position:relative;
   display:flex;align-items:center;justify-content:center;
@@ -247,6 +245,47 @@ html, body {
 }
 .cancel-link:active{color:var(--text);}
 
+/* NFC panel states */
+.nfc-panel{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  width:100%;margin-bottom:24px;
+}
+.nfc-state{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;}
+.nfc-state.hidden{display:none;}
+
+/* idle state */
+.nfc-stage-idle{
+  display:flex;flex-direction:column;align-items:center;gap:16px;cursor:pointer;
+}
+.nfc-core-idle{
+  width:110px;height:110px;
+  background:var(--card2);border:2px dashed rgba(77,159,255,0.3);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;
+  box-shadow:0 0 0 0 rgba(77,159,255,0.2);
+  animation:idlePulse 2.5s ease infinite;
+}
+@keyframes idlePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(77,159,255,0.15);}
+  50%{box-shadow:0 0 0 18px rgba(77,159,255,0);}
+}
+.nfc-stage-idle:active .nfc-core-idle{
+  background:rgba(77,159,255,0.1);border-color:var(--blue);transform:scale(1.05);
+}
+.nfc-idle-label{
+  font-size:15px;font-weight:700;color:var(--blue);text-align:center;
+}
+
+/* retry button */
+.retry-btn{
+  margin-top:14px;background:transparent;border:1px solid var(--border2);
+  border-radius:10px;padding:10px 20px;
+  font-family:'DM Mono',monospace;font-size:12px;
+  color:var(--sub);cursor:pointer;transition:all 0.15s;
+  text-transform:uppercase;letter-spacing:1px;
+}
+.retry-btn:active{border-color:var(--blue);color:var(--blue);}
+
 /* ── SLIDE 3 ── */
 #s3{background:var(--bg);}
 
@@ -281,9 +320,58 @@ html, body {
 .success-amount-hero{font-size:48px;font-weight:800;letter-spacing:-2px;color:var(--text);animation:slideUp 0.4s ease both;animation-delay:0.2s;}
 @keyframes slideUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
 
-.img-frame{width:100%;border-radius:20px;overflow:hidden;position:relative;margin-bottom:20px;animation:slideUp 0.5s ease both;animation-delay:0.3s;}
-.img-frame img{width:100%;max-height:240px;object-fit:cover;display:block;}
-.img-frame-label{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,rgba(0,0,0,0.75));font-size:12px;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.6);}
+.img-frame{width:100%;border-radius:20px;overflow:hidden;position:relative;margin-bottom:20px;animation:slideUp 0.5s ease both;animation-delay:0.3s; cursor:pointer;}
+.img-frame img{width:100%;max-height:240px;object-fit:cover;display:block;transition:transform 0.2s;}
+.img-frame:active img{transform:scale(0.98);}
+.img-frame-label{position:absolute;bottom:0;left:0;right:0;padding:14px 16px 14px;background:linear-gradient(transparent,rgba(0,0,0,0.75));font-size:12px;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.6);}
+.img-expand-icon{
+  position:absolute;top:12px;right:12px;
+  width:32px;height:32px;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:#fff;
+  border:1px solid rgba(255,255,255,0.15);
+}
+
+/* Fullscreen viewer */
+.fs-viewer{
+  position:fixed;inset:0;z-index:2000;
+  background:#000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.3s ease;
+  cursor:zoom-out;
+}
+.fs-viewer.open{opacity:1;pointer-events:all;}
+.fs-viewer img{
+  width:100%;height:100%;
+  object-fit:contain;
+  transform:scale(0.92);
+  transition:transform 0.35s cubic-bezier(0.34,1.3,0.64,1);
+  user-select:none;-webkit-user-select:none;
+}
+.fs-viewer.open img{transform:scale(1);}
+.fs-close{
+  position:absolute;top:calc(var(--safe-top) + 16px);right:16px;
+  width:38px;height:38px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;font-weight:700;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.fs-hint{
+  position:absolute;bottom:calc(var(--safe-bot) + 20px);
+  left:50%;transform:translateX(-50%);
+  font-size:12px;font-family:'DM Mono',monospace;
+  color:rgba(255,255,255,0.35);
+  letter-spacing:1px;
+  animation:blink 2s ease infinite;
+  white-space:nowrap;
+}
 
 .no-img-box{
   width:100%;height:100px;background:var(--card);
@@ -428,31 +516,72 @@ button{font-family:inherit;}
   <div class="slide" id="s2">
     <div class="s2-inner">
       <div class="pay-topbar">
-        <div class="pay-back" onclick="goSlide(0)">←</div>
+        <div class="pay-back" onclick="cancelPay()">←</div>
         <div class="pay-title">Pago seguro</div>
         <div class="pay-secure">🔒 SSL</div>
       </div>
       <div class="amount-card">
         <div class="ac-label">Total a cobrar</div>
         <div class="ac-amount" id="pay-amt">€0,00</div>
-        <div class="ac-sub">Acerca tu tarjeta o móvil</div>
+        <div class="ac-sub" id="pay-sub">Activa el lector NFC para pagar</div>
       </div>
-      <div class="nfc-wrap">
-        <div class="nfc-stage" id="nfc-stage" onclick="readNFC()">
-          <div class="nfc-ring"></div>
-          <div class="nfc-ring"></div>
-          <div class="nfc-ring"></div>
-          <div class="nfc-core">
-            <div class="nfc-icon">📶</div>
+
+      <!-- NFC STATUS PANEL -->
+      <div class="nfc-panel" id="nfc-panel">
+
+        <!-- STATE: idle -->
+        <div class="nfc-state" id="nfc-idle">
+          <div class="nfc-stage-idle" onclick="activarNFC()">
+            <div class="nfc-core-idle">
+              <span style="font-size:32px">📶</span>
+            </div>
+            <div class="nfc-idle-label">Toca para activar NFC</div>
           </div>
         </div>
-        <div class="nfc-text">
-          <div class="nfc-text-main">Acerca tu tarjeta o móvil</div>
-          <div class="nfc-text-sub">o toca el círculo para simular</div>
+
+        <!-- STATE: listening -->
+        <div class="nfc-state hidden" id="nfc-listening">
+          <div class="nfc-stage">
+            <div class="nfc-ring"></div>
+            <div class="nfc-ring"></div>
+            <div class="nfc-ring"></div>
+            <div class="nfc-core">
+              <div class="nfc-icon">📶</div>
+            </div>
+          </div>
+          <div class="nfc-text">
+            <div class="nfc-text-main">Esperando tarjeta o móvil…</div>
+            <div class="nfc-text-sub" id="nfc-listen-sub">NFC activo · acerca el dispositivo</div>
+          </div>
         </div>
-      </div>
-      <button class="sim-btn" onclick="readNFC()">⚡ Simular pago NFC</button>
-      <div class="cancel-link" onclick="goSlide(0)">Cancelar pago</div>
+
+        <!-- STATE: not supported -->
+        <div class="nfc-state hidden" id="nfc-nosupport">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:40px;margin-bottom:12px">📵</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">NFC no disponible</div>
+            <div style="font-size:12px;color:var(--sub);font-family:'DM Mono',monospace;line-height:1.6">
+              Requiere Android + Chrome + HTTPS<br>Usa el botón de abajo para simular
+            </div>
+          </div>
+        </div>
+
+        <!-- STATE: error -->
+        <div class="nfc-state hidden" id="nfc-error">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:#ff6b6b">Error NFC</div>
+            <div style="font-size:12px;color:var(--sub);font-family:'DM Mono',monospace;line-height:1.6" id="nfc-error-msg">
+              No se pudo acceder al NFC
+            </div>
+            <button class="retry-btn" onclick="activarNFC()">Reintentar</button>
+          </div>
+        </div>
+
+      </div><!-- /nfc-panel -->
+
+      <button class="sim-btn" onclick="simularNFC()">⚡ Simular pago NFC</button>
+      <div class="cancel-link" onclick="cancelPay()">Cancelar pago</div>
     </div>
   </div>
 
@@ -498,6 +627,7 @@ button{font-family:inherit;}
 
 <script>
 let amount = 0, imgData = null, currentSlide = 0, isReading = false;
+let nfcReader = null; // persistent NDEFReader instance
 
 // Clock
 function updateClock(){
@@ -528,7 +658,7 @@ document.addEventListener('touchend', e=>{
   if(dx<0){
     if(currentSlide===0 && amount>0) goPay();
   } else {
-    if(currentSlide===1) goSlide(0);
+    if(currentSlide===1) cancelPay();
     if(currentSlide===2) goSlide(0);
   }
 },{passive:true});
@@ -565,19 +695,106 @@ function handleImg(e){
 function goPay(){
   if(amount<=0) return;
   document.getElementById('pay-amt').textContent = fmt(amount);
+  document.getElementById('pay-sub').textContent = 'Activa el lector NFC para pagar';
+  setNFCState('idle');
   goSlide(1);
 }
 
-// NFC read
-function readNFC(){
+// Cancel payment — stop NFC scan if active
+function cancelPay(){
+  stopNFC();
+  goSlide(0);
+}
+
+// ─── NFC STATE MANAGER ───────────────────────────
+function setNFCState(state){ // idle | listening | nosupport | error
+  ['idle','listening','nosupport','error'].forEach(s=>{
+    document.getElementById('nfc-'+s).classList.toggle('hidden', s!==state);
+  });
+}
+
+// ─── ACTIVATE NFC (called from user gesture) ─────
+async function activarNFC(){
+  if(!('NDEFReader' in window)){
+    setNFCState('nosupport');
+    return;
+  }
+
+  setNFCState('listening');
+  document.getElementById('nfc-listen-sub').textContent = 'Iniciando lector NFC…';
+  document.getElementById('pay-sub').textContent = 'NFC activo · acerca tu dispositivo';
+
+  try {
+    // Stop any previous reader
+    stopNFC();
+
+    nfcReader = new NDEFReader();
+
+    // onreading fires when a tag/card is detected
+    nfcReader.onreading = (event) => {
+      if(currentSlide === 1 && !isReading){
+        readNFCSuccess();
+      }
+    };
+
+    nfcReader.onreadingerror = (event) => {
+      document.getElementById('nfc-listen-sub').textContent = 'Error de lectura · reintenta';
+    };
+
+    await nfcReader.scan(); // This requires a user gesture — we are inside onclick ✓
+
+    document.getElementById('nfc-listen-sub').textContent = 'NFC activo · acerca el dispositivo';
+
+  } catch(err) {
+    let msg = 'No se pudo acceder al NFC.';
+    if(err.name === 'NotAllowedError')
+      msg = 'Permiso denegado. Actívalo en ajustes del navegador.';
+    else if(err.name === 'NotSupportedError')
+      msg = 'NFC no soportado en este dispositivo.';
+    else if(err.name === 'NotReadableError')
+      msg = 'El hardware NFC está ocupado o apagado.';
+    else if(err.message)
+      msg = err.message;
+
+    document.getElementById('nfc-error-msg').textContent = msg;
+    setNFCState('error');
+    nfcReader = null;
+  }
+}
+
+function stopNFC(){
+  // NDEFReader has no explicit stop in the spec,
+  // but replacing the reference and letting GC handle it
+  // stops new events from the old reader instance.
+  nfcReader = null;
+}
+
+// ─── CALLED WHEN REAL NFC TAG IS READ ────────────
+function readNFCSuccess(){
   if(isReading) return;
-  isReading=true;
+  isReading = true;
+  stopNFC();
+  document.getElementById('overlay').classList.add('show');
+  // Brief delay for visual feedback then show success
+  setTimeout(()=>{
+    document.getElementById('overlay').classList.remove('show');
+    isReading = false;
+    showSuccess();
+  }, 900);
+}
+
+// ─── SIMULATE NFC (fallback button) ──────────────
+function simularNFC(){
+  if(isReading) return;
+  isReading = true;
+  stopNFC();
+  setNFCState('idle'); // reset UI
   document.getElementById('overlay').classList.add('show');
   setTimeout(()=>{
     document.getElementById('overlay').classList.remove('show');
-    isReading=false;
+    isReading = false;
     showSuccess();
-  }, 1400+Math.random()*900);
+  }, 1400 + Math.random()*800);
 }
 
 function showSuccess(){
@@ -593,7 +810,11 @@ function showSuccess(){
 
   const iw=document.getElementById('s3-img-wrap');
   iw.innerHTML = imgData
-    ? `<div class="img-frame"><img src="${imgData}" alt="Confirmación"><div class="img-frame-label">📷 Imagen de confirmación</div></div>`
+    ? `<div class="img-frame" onclick="abrirFullscreen()" title="Toca para ver en pantalla completa">
+         <img src="${imgData}" alt="Confirmación">
+         <div class="img-frame-label">📷 Toca para pantalla completa</div>
+         <div class="img-expand-icon">⛶</div>
+       </div>`
     : `<div class="no-img-box">🖼️ Sin imagen seleccionada</div>`;
 
   goSlide(2,true);
@@ -609,21 +830,44 @@ function reset(){
   uz.innerHTML=`<div class="uz-icon">🖼️</div><div class="uz-text"><b>Toca para subir imagen</b><br>Aparecerá tras el pago</div><div class="uz-overlay">✏️ Cambiar</div>`;
   uz.onclick=()=>document.getElementById('file-input').click();
   document.getElementById('file-input').value='';
+  stopNFC();
   goSlide(0);
 }
 
 function fmt(v){ return '€'+v.toFixed(2).replace('.',','); }
 
-// Real NFC
-async function initNFC(){
-  if(!('NDEFReader' in window)) return;
-  try{
-    const r=new NDEFReader();
-    await r.scan();
-    r.onreading=()=>{ if(currentSlide===1&&!isReading) readNFC(); };
-  }catch(e){}
+// Fullscreen image viewer
+function abrirFullscreen(){
+  if(!imgData) return;
+  document.getElementById('fs-img').src = imgData;
+  const v = document.getElementById('fs-viewer');
+  v.classList.add('open');
+  // Try native fullscreen on Android
+  if(v.requestFullscreen) v.requestFullscreen().catch(()=>{});
+  else if(v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+  // Prevent scroll behind
+  document.body.style.overflow = 'hidden';
 }
-initNFC();
+
+function cerrarFullscreen(){
+  const v = document.getElementById('fs-viewer');
+  v.classList.remove('open');
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else if(document.webkitFullscreenElement) document.webkitExitFullscreen();
+  document.body.style.overflow = '';
+}
+
+// Close fullscreen with back gesture / Escape
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarFullscreen(); });
+document.addEventListener('fullscreenchange', ()=>{ if(!document.fullscreenElement) cerrarFullscreen(); });
+document.addEventListener('webkitfullscreenchange', ()=>{ if(!document.webkitFullscreenElement) cerrarFullscreen(); });
 </script>
+<!-- FULLSCREEN IMAGE VIEWER -->
+<div class="fs-viewer" id="fs-viewer" onclick="cerrarFullscreen()">
+  <img id="fs-img" src="" alt="Pantalla completa">
+  <div class="fs-close">✕</div>
+  <div class="fs-hint">Toca para cerrar</div>
+</div>
+
 </body>
 </html>
