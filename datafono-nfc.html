@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DatafonoPay — Simulador NFC</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0f;
+    --surface: #111118;
+    --card: #181825;
+    --border: #2a2a3e;
+    --accent: #00ff9d;
+    --accent2: #7c3aed;
+    --danger: #ff3b5c;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 60% 50% at 20% 30%, rgba(0,255,157,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(124,58,237,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 1;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ===== SCREEN 1: SETUP ===== */
+  .setup-container {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .brand-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .brand-name {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .brand-name span { color: var(--accent); }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  /* Amount input */
+  .amount-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    transition: border-color 0.2s;
+  }
+
+  .amount-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,255,157,0.1);
+  }
+
+  .currency-symbol {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+
+  #amount-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 36px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    color: var(--white);
+    width: 100%;
+    min-width: 0;
+  }
+
+  #amount-input::placeholder { color: var(--border); }
+
+  .quick-amounts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .quick-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,157,0.05);
+  }
+
+  /* Image upload */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover {
+    border-color: var(--accent2);
+    background: rgba(124,58,237,0.04);
+  }
+
+  .upload-zone.has-image {
+    border-color: var(--accent);
+    border-style: solid;
+    padding: 0;
+  }
+
+  .upload-zone.has-image img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-text { font-size: 14px; color: var(--muted); }
+  .upload-text strong { color: var(--text); }
+
+  #file-input { display: none; }
+
+  .change-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: 12px;
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .upload-zone.has-image:hover .change-img-overlay { opacity: 1; }
+
+  /* CTA button */
+  .cta-btn {
+    background: var(--accent);
+    color: var(--black);
+    border: none;
+    border-radius: 14px;
+    padding: 18px 28px;
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: -0.3px;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,255,157,0.3);
+  }
+
+  .cta-btn:active { transform: translateY(0); }
+
+  .cta-btn:disabled {
+    background: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ===== SCREEN 2: PAYMENT GATEWAY ===== */
+  .gateway-container {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .terminal-header {
+    width: 100%;
+    background: var(--accent2);
+    border-radius: 20px 20px 0 0;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .terminal-brand {
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .terminal-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .terminal-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+  }
+
+  .terminal-dots span:last-child { background: rgba(255,255,255,0.9); }
+
+  .terminal-body {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 20px 20px;
+    width: 100%;
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .payment-amount-display {
+    text-align: center;
+  }
+
+  .payment-label {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .payment-amount-big {
+    font-size: clamp(48px, 10vw, 72px);
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    color: var(--white);
+    letter-spacing: -2px;
+  }
+
+  .payment-amount-big .cent { color: var(--muted); font-size: 0.55em; }
+
+  /* NFC zone */
+  .nfc-zone {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nfc-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    opacity: 0;
+    animation: nfc-pulse 2s ease-out infinite;
+  }
+
+  .nfc-ring:nth-child(1) { width: 80px; height: 80px; animation-delay: 0s; }
+  .nfc-ring:nth-child(2) { width: 120px; height: 120px; animation-delay: 0.4s; }
+  .nfc-ring:nth-child(3) { width: 170px; height: 170px; animation-delay: 0.8s; }
+
+  @keyframes nfc-pulse {
+    0% { opacity: 0.8; transform: scale(0.8); }
+    100% { opacity: 0; transform: scale(1.1); }
+  }
+
+  .nfc-core {
+    width: 70px;
+    height: 70px;
+    background: rgba(0,255,157,0.1);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s;
+  }
+
+  .nfc-zone:hover .nfc-core,
+  .nfc-zone:active .nfc-core {
+    background: rgba(0,255,157,0.25);
+    transform: scale(1.1);
+  }
+
+  .nfc-instruction {
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    line-height: 1.6;
+  }
+
+  .nfc-instruction strong { color: var(--accent); }
+
+  .simulate-tap-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .simulate-tap-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .back-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 8px 0;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+
+  .back-btn:hover { color: var(--text); }
+
+  /* ===== SCREEN 3: SUCCESS ===== */
+  .success-container {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    animation: fadeInUp 0.6s ease both;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .success-icon-wrap {
+    width: 90px;
+    height: 90px;
+    background: rgba(0,255,157,0.12);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    animation: pop 0.5s cubic-bezier(0.36,0.07,0.19,0.97) both;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0); }
+    80% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .success-title {
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: -1px;
+    color: var(--accent);
+  }
+
+  .success-amount {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .nfc-read-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,255,157,0.08);
+    border: 1px solid rgba(0,255,157,0.3);
+    border-radius: 100px;
+    padding: 10px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .nfc-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1s ease infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .success-image-frame {
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  .success-image-frame img {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    display: block;
+    animation: revealImg 0.8s ease both;
+    animation-delay: 0.3s;
+  }
+
+  @keyframes revealImg {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .success-image-frame .img-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .no-image-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .txn-details {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .txn-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .txn-key {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .txn-val {
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+  }
+
+  .txn-val.green { color: var(--accent); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  .new-payment-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 24px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .new-payment-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ===== READING OVERLAY ===== */
+  .reading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(8px);
+  }
+
+  .reading-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .reading-spinner {
+    width: 80px;
+    height: 80px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .reading-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    animation: pulse-text 1s ease infinite;
+  }
+
+  @keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .reading-sub {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .terminal-body { padding: 28px 20px; }
+    .card { padding: 20px; }
+    .setup-container { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- SCREEN 1: SETUP -->
+<div class="screen active" id="screen-setup">
+  <div class="setup-container">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">💳</div>
+        <div class="brand-name">Datafono<span>Pay</span></div>
+      </div>
+      <h1>Cobra con <em>NFC</em><br>en segundos</h1>
+      <p class="subtitle" style="margin-top:10px">// simulador de pago con datáfono</p>
+    </div>
+
+    <div class="card">
+      <div>
+        <span class="field-label">Importe a cobrar</span>
+        <div class="amount-wrapper">
+          <span class="currency-symbol">€</span>
+          <input type="number" id="amount-input" placeholder="0.00" step="0.01" min="0.01">
+        </div>
+        <div class="quick-amounts" style="margin-top:12px">
+          <button class="quick-btn" onclick="setAmount(5)">€5</button>
+          <button class="quick-btn" onclick="setAmount(10)">€10</button>
+          <button class="quick-btn" onclick="setAmount(20)">€20</button>
+          <button class="quick-btn" onclick="setAmount(50)">€50</button>
+          <button class="quick-btn" onclick="setAmount(100)">€100</button>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Imagen de confirmación (opcional)</span>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-text"><strong>Haz clic para subir imagen</strong><br>JPG, PNG, GIF — max 10MB</div>
+          <div class="change-img-overlay">✏️ Cambiar imagen</div>
+        </div>
+        <input type="file" id="file-input" accept="image/*" onchange="handleImageUpload(event)">
+      </div>
+    </div>
+
+    <button class="cta-btn" id="proceed-btn" onclick="goToPayment()" disabled>
+      Ir a pasarela de pago →
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN 2: PAYMENT GATEWAY -->
+<div class="screen" id="screen-payment">
+  <div class="gateway-container">
+    <div class="terminal-header">
+      <span class="terminal-brand">DatafonoPay</span>
+      <div class="terminal-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="terminal-body">
+      <div class="payment-amount-display">
+        <div class="payment-label">Total a pagar</div>
+        <div class="payment-amount-big" id="payment-amount-display">€0.00</div>
+      </div>
+
+      <div class="nfc-zone" id="nfc-zone" onclick="startNFCRead()">
+        <div class="nfc-ring"></div>
+        <div class="nfc-ring"></div>
+        <div class="nfc-ring"></div>
+        <div class="nfc-core">📡</div>
+      </div>
+
+      <div class="nfc-instruction">
+        <strong>Acerca tu tarjeta o móvil</strong><br>
+        al área NFC para pagar
+      </div>
+
+      <button class="simulate-tap-btn" onclick="startNFCRead()">
+        ⚡ Simular acercamiento NFC
+      </button>
+
+      <button class="back-btn" onclick="goBack()">← volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: SUCCESS -->
+<div class="screen" id="screen-success">
+  <div class="success-container">
+    <div class="success-icon-wrap">✅</div>
+    <div class="success-title">¡Pago aceptado!</div>
+    <div class="success-amount" id="success-amount-display"></div>
+
+    <div class="nfc-read-badge">
+      <div class="nfc-dot"></div>
+      NFC leído correctamente
+    </div>
+
+    <div id="success-image-container"></div>
+
+    <div class="txn-details">
+      <div class="txn-row">
+        <span class="txn-key">Estado</span>
+        <span class="txn-val green">✔ APROBADO</span>
+      </div>
+      <div class="divider"></div>
+      <div class="txn-row">
+        <span class="txn-key">Método</span>
+        <span class="txn-val">NFC / Contactless</span>
+      </div>
+      <div class="divider"></div>
+      <div class="txn-row">
+        <span class="txn-key">Referencia</span>
+        <span class="txn-val" id="txn-ref"></span>
+      </div>
+      <div class="divider"></div>
+      <div class="txn-row">
+        <span class="txn-key">Fecha y hora</span>
+        <span class="txn-val" id="txn-time"></span>
+      </div>
+    </div>
+
+    <button class="new-payment-btn" onclick="resetAll()">+ Nuevo cobro</button>
+  </div>
+</div>
+
+<!-- READING OVERLAY -->
+<div class="reading-overlay" id="reading-overlay">
+  <div class="reading-spinner"></div>
+  <div class="reading-text">Leyendo NFC...</div>
+  <div class="reading-sub">Mantén el dispositivo cerca</div>
+</div>
+
+<script>
+  let selectedAmount = 0;
+  let selectedImageDataUrl = null;
+  let currentScreen = 'setup';
+
+  const amountInput = document.getElementById('amount-input');
+  const proceedBtn = document.getElementById('proceed-btn');
+
+  amountInput.addEventListener('input', () => {
+    selectedAmount = parseFloat(amountInput.value);
+    proceedBtn.disabled = !(selectedAmount > 0);
+  });
+
+  function setAmount(val) {
+    amountInput.value = val.toFixed(2);
+    selectedAmount = val;
+    proceedBtn.disabled = false;
+  }
+
+  function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      selectedImageDataUrl = e.target.result;
+      const zone = document.getElementById('upload-zone');
+      zone.innerHTML = `
+        <img src="${selectedImageDataUrl}" alt="Preview">
+        <div class="change-img-overlay">✏️ Cambiar imagen</div>
+      `;
+      zone.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    currentScreen = id;
+  }
+
+  function goToPayment() {
+    if (!selectedAmount || selectedAmount <= 0) return;
+    const fmt = formatAmount(selectedAmount);
+    document.getElementById('payment-amount-display').textContent = fmt;
+    showScreen('screen-payment');
+  }
+
+  function goBack() {
+    showScreen('screen-setup');
+  }
+
+  function formatAmount(amount) {
+    return '€' + amount.toFixed(2).replace('.', ',');
+  }
+
+  function startNFCRead() {
+    const overlay = document.getElementById('reading-overlay');
+    overlay.classList.add('active');
+
+    // Simulate NFC reading delay (1.5–2.5s)
+    const delay = 1500 + Math.random() * 1000;
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      showSuccess();
+    }, delay);
+  }
+
+  function showSuccess() {
+    // Success amount
+    document.getElementById('success-amount-display').textContent = formatAmount(selectedAmount);
+
+    // Transaction details
+    document.getElementById('txn-ref').textContent = 'TXN' + Math.random().toString(36).substr(2,8).toUpperCase();
+    const now = new Date();
+    document.getElementById('txn-time').textContent =
+      now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+
+    // Image
+    const container = document.getElementById('success-image-container');
+    container.style.width = '100%';
+    if (selectedImageDataUrl) {
+      container.innerHTML = `
+        <div class="success-image-frame">
+          <img src="${selectedImageDataUrl}" alt="Imagen de confirmación">
+          <div class="img-overlay">📷 Imagen de confirmación de pago</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="no-image-placeholder">
+          <span style="font-size:32px">🖼️</span>
+          <span>Sin imagen seleccionada</span>
+        </div>
+      `;
+    }
+
+    showScreen('screen-success');
+  }
+
+  function resetAll() {
+    selectedAmount = 0;
+    selectedImageDataUrl = null;
+    amountInput.value = '';
+    proceedBtn.disabled = true;
+
+    // Reset upload zone
+    const zone = document.getElementById('upload-zone');
+    zone.classList.remove('has-image');
+    zone.innerHTML = `
+      <div class="upload-icon">🖼️</div>
+      <div class="upload-text"><strong>Haz clic para subir imagen</strong><br>JPG, PNG, GIF — max 10MB</div>
+      <div class="change-img-overlay">✏️ Cambiar imagen</div>
+    `;
+
+    document.getElementById('file-input').value = '';
+    showScreen('screen-setup');
+  }
+
+  // Support real NFC via Web NFC API if available
+  async function tryRealNFC() {
+    if ('NDEFReader' in window) {
+      try {
+        const ndef = new NDEFReader();
+        await ndef.scan();
+        ndef.onreading = () => {
+          if (currentScreen === 'screen-payment') {
+            startNFCRead();
+          }
+        };
+      } catch(e) {
+        // Not available or denied — simulation mode only
+      }
+    }
+  }
+
+  tryRealNFC();
+</script>
+</body>
+</html>
